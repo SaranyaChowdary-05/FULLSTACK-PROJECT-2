@@ -6,24 +6,43 @@ const LiveFeed = () => {
   const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
-    const socket = new SockJS(`http://${window.location.hostname}:8080/ws`);
-    const client = new Client({
-      webSocketFactory: () => socket,
-      onConnect: () => {
-        console.log('Connected to WebSocket');
-        client.subscribe('/topic/notifications', (message) => {
-          const notification = JSON.parse(message.body);
-          addNotification(notification);
-        });
-      },
-      onStompError: (frame) => {
-        console.error('STOMP error', frame);
+    let client;
+    try {
+      const isHttps = window.location.protocol === 'https:';
+      const protocol = isHttps ? 'https' : 'http';
+      // In production (HTTPS Vercel), port 8080 ws will not be active and throws mixed content security errors.
+      // We check protocol and match it to avoid SecurityError, falling back to warning if unable to connect.
+      const socketUrl = `${protocol}://${window.location.hostname}${isHttps ? '' : ':8080'}/ws`;
+      
+      const socket = new SockJS(socketUrl);
+      client = new Client({
+        webSocketFactory: () => socket,
+        onConnect: () => {
+          console.log('Connected to WebSocket');
+          client.subscribe('/topic/notifications', (message) => {
+            const notification = JSON.parse(message.body);
+            addNotification(notification);
+          });
+        },
+        onStompError: (frame) => {
+          console.error('STOMP error', frame);
+        }
+      });
+
+      client.activate();
+    } catch (err) {
+      console.warn('WebSocket connection skipped or failed:', err.message);
+    }
+
+    return () => {
+      if (client) {
+        try {
+          client.deactivate();
+        } catch (e) {
+          // ignore
+        }
       }
-    });
-
-    client.activate();
-
-    return () => client.deactivate();
+    };
   }, []);
 
   const addNotification = (notif) => {
