@@ -1,0 +1,9 @@
+{
+  "scripts": {
+    "start": "echo 'This folder is not a Node backend server. Please verify your Render Root Directory settings.'"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^5.2.1"
+  }
+}

@@ -1,0 +1,58 @@
+[
+  {
+    "id": 1,
+    "name": "Saranya Chowdary",
+    "email": "saranya@nexus.edu",
+    "role": "admin",
+    "dept": "IT Dept",
+    "xp": 0
+  },
+  {
+    "id": 2,
+    "name": "Rahul Sharma",
+    "email": "rahul@nexus.edu",
+    "role": "user",
+    "dept": "CS Dept",
+    "xp": 200
+  },
+  {
+    "id": 3,
+    "name": "Priya Verma",
+    "email": "priya@nexus.edu",
+    "role": "user",
+    "dept": "Fine Arts",
+    "xp": 150
+  },
+  {
+    "id": 4,
+    "name": "Amit Patel",
+    "email": "amit@nexus.edu",
+    "role": "user",
+    "dept": "Engineering",
+    "xp": 300
+  },
+  {
+    "id": 5,
+    "name": "Neha Gupta",
+    "email": "neha@nexus.edu",
+    "role": "user",
+    "dept": "Commerce",
+    "xp": 100
+  },
+  {
+    "id": 6,
+    "name": "Vikram Singh",
+    "email": "vikram@nexus.edu",
+    "role": "user",
+    "dept": "Physics",
+    "xp": 250
+  },
+  {
+    "id": 7,
+    "name": "Ananya Reddy",
+    "email": "ananya@nexus.edu",
+    "role": "user",
+    "dept": "Biology",
+    "xp": 175
+  }
+]

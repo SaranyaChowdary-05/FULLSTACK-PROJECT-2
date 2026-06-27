@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EventNexus - Standalone Portal</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- CDNs -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7.0.0/bundles/stomp.umd.min.js"></script>
+    <script src="https://unpkg.com/qrcode.react@3.1.0/dist/qrcode.react.umd.min.js"></script>
+
+    <style>
+        :root {
+            --lavender: #E6E6FA;
+            --soft-pink: #FFB6C1;
+            --mint-green: #98FF98;
+            --deep-purple: #483D8B;
+            --primary: #9370DB;
+            --secondary: #FFB6C1;
+            --bg-main: #F5F3FF;
+            --text-main: #2D3748;
+            --text-muted: #718096;
+            --glass-bg: rgba(255, 255, 255, 0.8);
+            --glass-border: rgba(255, 255, 255, 0.4);
+            --glass-shadow: 0 8px 32px 0 rgba(147, 112, 219, 0.15);
+            --error-red: #ff4d4d;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-main);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(230, 230, 250, 0.5) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(255, 182, 193, 0.3) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(152, 255, 152, 0.2) 0px, transparent 50%);
+            color: var(--text-main);
+            min-height: 100vh;
+        }
+
+        .glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--glass-shadow);
+            border-radius: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 700;
+        }
+
+        .btn {
+            padding: 0.8rem 1.5rem;
+            border-radius: 12px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: inherit;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), #8A2BE2);
+            color: white;
+            box-shadow: 0 4px 15px rgba(147, 112, 219, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(147, 112, 219, 0.4);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            border-radius: 10px;
+            border: 1px solid var(--glass-border);
+            background: rgba(255, 255, 255, 0.6);
+            font-family: inherit;
+            margin-bottom: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .event-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .sidebar {
+            width: 260px;
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            padding: 2rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+        }
+
+        .main-content {
+            margin-left: 260px;
+            padding: 2rem;
+            min-height: 100vh;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); }
+            .main-content { margin-left: 0; }
+        }
+
+        .nav-item {
+            padding: 1rem;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            color: var(--text-muted);
+        }
+
+        .nav-item:hover {
+            background: rgba(147, 112, 219, 0.05);
+            color: var(--primary);
+        }
+
+        .nav-item.active {
+            background: rgba(147, 112, 219, 0.1);
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .fade-in { animation: fadeIn 0.5s ease-out forwards; }
+
+        .notification-toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            padding: 1rem 1.5rem;
+            background: white;
+            border-left: 4px solid var(--primary);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border-radius: 12px;
+        }
+
+        .error-container {
+            background: #fff5f5;
+            border: 1px solid #feb2b2;
+            color: #c53030;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin: 2rem;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <script>
+        // Global error catcher for initial load
+        window.onerror = function(msg, url, lineNo, columnNo, error) {
+            const root = document.getElementById('root');
+            if (root) {
+                root.innerHTML = `
+                    <div class="error-container">
+                        <h3>Critical Error Detected</h3>
+                        <p>${msg}</p>
+                        <small>Line: ${lineNo}, Column: ${columnNo}</small>
+                        <br><br>
+                        <button onclick="location.reload()" class="btn btn-primary" style="padding: 0.5rem 1rem;">Retry</button>
+                    </div>
+                `;
+            }
+            return false;
+        };
+
+        window.addEventListener('error', function(e) {
+            if (e.target.tagName === 'SCRIPT') {
+                console.error('Failed to load script:', e.target.src);
+                const root = document.getElementById('root');
+                if (root) {
+                    root.innerHTML = `
+                        <div style="text-align: center; padding: 3rem;">
+                            <h2 style="color: var(--error-red)">Dependency Failed</h2>
+                            <p>Failed to load: ${e.target.src.split('/').pop()}</p>
+                            <p style="margin-top: 1rem; color: #718096;">Please check your internet connection or CDN status.</p>
+                            <button onclick="location.reload()" class="btn btn-primary" style="margin-top: 2rem;">Retry Connection</button>
+                        </div>
+                    `;
+                }
+            }
+        }, true);
+    </script>
+
+    <div id="root">
+        <div style="display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'Outfit', sans-serif; color: #718096;">
+            <div style="text-align: center;" class="fade-in">
+                <div style="width: 50px; height: 50px; border: 3px solid var(--primary); border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1.5rem;"></div>
+                <h2 style="margin-bottom: 0.5rem; color: var(--primary)">Initializing EventNexus</h2>
+                <p>Establishing secure connection...</p>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+
+    <script type="text/babel">
+        // Ensure dependencies are available before executing React code
+        const validateDependencies = () => {
+            const deps = {
+                'React': window.React,
+                'ReactDOM': window.ReactDOM,
+                'axios': window.axios,
+                'Babel': window.Babel,
+                'SockJS': window.SockJS
+            };
+            
+            const missing = Object.keys(deps).filter(k => !deps[k]);
+            if (missing.length > 0) {
+                throw new Error(`Missing dependencies: ${missing.join(', ')}`);
+            }
+        };
+
+        try {
+            validateDependencies();
+        } catch (e) {
+            document.getElementById('root').innerHTML = `<div class="error-container"><h3>Dependency Error</h3><p>${e.message}</p></div>`;
+        }
+
+        const { useState, useEffect, useMemo } = React;
+        
+        // QR Code Component with robust library detection
+        const QRCodeSVG = (props) => {
+            const QR = window.QRCodeSVG || 
+                       (window.qrcode && window.qrcode.QRCodeSVG) || 
+                       (window['qrcode.react'] && window['qrcode.react'].QRCodeSVG);
+            
+            if (!QR) return <div style={{padding: '1rem', border: '1px dashed #feb2b2', color: '#c53030', borderRadius: '8px'}}>QR Library not loaded</div>;
+            const Component = QR;
+            return <Component {...props} />;
+        };
+
+        const API_BASE = "http://localhost:5000";
+
+        // --- COMPONENTS ---
+
+        const LiveNotification = ({ message, onClose }) => (
+            <div className="glass notification-toast fade-in">
+                <span style={{ fontSize: '1.2rem' }}>✨</span>
+                <span style={{ fontSize: '0.9rem', fontWeight: '500' }}>{message}</span>
+                <button onClick={onClose} style={{ border: 'none', background: 'none', cursor: 'pointer', opacity: 0.5, fontSize: '1.2rem', padding: '0 0.5rem' }}>✕</button>
+            </div>
+        );
+
+        const Login = ({ onLogin }) => {
+            const [email, setEmail] = useState('admin@nexus.edu');
+            const [password, setPassword] = useState('123');
+            const [error, setError] = useState('');
+            const [loading, setLoading] = useState(false);
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                setLoading(true);
+                setError('');
+                try {
+                    const res = await axios.post(`${API_BASE}/api/auth/login`, { email, password });
+                    onLogin(res.data.user, res.data.token);
+                } catch (err) {
+                    console.error("Login error:", err);
+                    if (!err.response) {
+                        setError("Network Error: Connection to backend failed at localhost:5000");
+                    } else {
+                        setError(err.response.data?.error || "Invalid Credentials");
+                    }
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            return (
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', padding: '1rem' }}>
+                    <div className="glass fade-in" style={{ padding: '3rem', width: '100%', maxWidth: '420px' }}>
+                        <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+                            <h2 className="gradient-text" style={{ fontSize: '2.2rem', marginBottom: '0.5rem' }}>EventNexus</h2>
+                            <p style={{ color: 'var(--text-muted)' }}>Sign in to your account</p>
+                        </div>
+                        
+                        {error && (
+                            <div style={{ padding: '1rem', background: '#fff5f5', border: '1px solid #feb2b2', borderRadius: '10px', marginBottom: '1.5rem', fontSize: '0.85rem', color: '#c53030' }}>
+                                ⚠️ {error}
+                            </div>
+                        )}
+
+                        <form onSubmit={handleSubmit}>
+                            <div style={{ marginBottom: '1.2rem' }}>
+                                <label style={{ fontSize: '0.8rem', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '0.5rem', display: 'block' }}>EMAIL ADDRESS</label>
+                                <input className="input-field" type="email" placeholder="admin@nexus.edu" value={email} onChange={e => setEmail(e.target.value)} required />
+                            </div>
+                            <div style={{ marginBottom: '2rem' }}>
+                                <label style={{ fontSize: '0.8rem', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '0.5rem', display: 'block' }}>PASSWORD</label>
+                                <input className="input-field" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required />
+                            </div>
+                            <button className="btn btn-primary" style={{ width: '100%', height: '50px', fontSize: '1rem' }} disabled={loading}>
+                                {loading ? 'Signing in...' : 'Sign In'}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            );
+        };
+
+        const BookingWizard = ({ event, onBack }) => {
+            const [step, setStep] = useState(1);
+            const [booking, setBooking] = useState({
+                ticketType: 'GENERAL',
+                numberOfTickets: 1,
+                attendeeName: '',
+                emailId: '',
+                phoneNumber: ''
+            });
+            const [result, setResult] = useState(null);
+            const [loading, setLoading] = useState(false);
+
+            const handleBook = async () => {
+                setLoading(true);
+                try {
+                    const res = await axios.post(`${API_BASE}/api/bookings`, { 
+                        ...booking, 
+                        event: { id: event.id },
+                        totalAmount: (booking.ticketType === 'VIP' ? event.priceVIP : event.priceGeneral) * booking.numberOfTickets
+                    });
+                    setResult(res.data);
+                    setStep(4);
+                } catch (err) {
+                    alert(err.response?.data?.error || "Booking failed. Please try again.");
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            return (
+                <div className="fade-in glass" style={{ padding: '2.5rem', maxWidth: '700px', margin: '0 auto' }}>
+                    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '2.5rem' }}>
+                        {[1, 2, 3, 4].map(s => (
+                            <div key={s} style={{ 
+                                flex: 1, 
+                                height: '6px', 
+                                background: step >= s ? 'var(--primary)' : 'rgba(0,0,0,0.05)', 
+                                borderRadius: '3px',
+                                transition: 'background 0.3s ease'
+                            }} />
+                        ))}
+                    </div>
+
+                    {step === 1 && (
+                        <div>
+                            <h3 style={{ marginBottom: '1.5rem' }}>Select Your Tickets</h3>
+                            <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '2rem' }}>
+                                <div className="glass" 
+                                     style={{ 
+                                         flex: 1, 
+                                         padding: '1.5rem', 
+                                         cursor: 'pointer', 
+                                         border: booking.ticketType === 'GENERAL' ? '2px solid var(--primary)' : '2px solid transparent',
+                                         transition: 'all 0.2s'
+                                     }} 
+                                     onClick={() => setBooking({...booking, ticketType: 'GENERAL'})}>
+                                    <h4 style={{ color: booking.ticketType === 'GENERAL' ? 'var(--primary)' : 'inherit' }}>General Admission</h4>
+                                    <p style={{ fontSize: '1.5rem', fontWeight: '700', marginTop: '0.5rem' }}>${event.priceGeneral}</p>
+                                </div>
+                                <div className="glass" 
+                                     style={{ 
+                                         flex: 1, 
+                                         padding: '1.5rem', 
+                                         cursor: 'pointer', 
+                                         border: booking.ticketType === 'VIP' ? '2px solid var(--primary)' : '2px solid transparent',
+                                         transition: 'all 0.2s'
+                                     }} 
+                                     onClick={() => setBooking({...booking, ticketType: 'VIP'})}>
+                                    <h4 style={{ color: booking.ticketType === 'VIP' ? 'var(--primary)' : 'inherit' }}>VIP Experience</h4>
+                                    <p style={{ fontSize: '1.5rem', fontWeight: '700', marginTop: '0.5rem' }}>${event.priceVIP}</p>
+                                </div>
+                            </div>
+                            <label style={{ fontSize: '0.8rem', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '0.5rem', display: 'block' }}>QUANTITY</label>
+                            <input type="number" className="input-field" value={booking.numberOfTickets} onChange={e => setBooking({...booking, numberOfTickets: parseInt(e.target.value) || 1})} min="1" max="10" />
+                            <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                                <button className="btn" style={{ background: 'rgba(0,0,0,0.05)' }} onClick={onBack}>Cancel</button>
+                                <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => setStep(2)}>Continue</button>
+                            </div>
+                        </div>
+                    )}
+
+                    {step === 2 && (
+                        <div>
+                            <h3 style={{ marginBottom: '1.5rem' }}>Attendee Information</h3>
+                            <input className="input-field" placeholder="Full Name" value={booking.attendeeName} onChange={e => setBooking({...booking, attendeeName: e.target.value})} />
+                            <input className="input-field" placeholder="Email Address" value={booking.emailId} onChange={e => setBooking({...booking, emailId: e.target.value})} />
+                            <input className="input-field" placeholder="Phone Number" value={booking.phoneNumber} onChange={e => setBooking({...booking, phoneNumber: e.target.value})} />
+                            <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                                <button className="btn" style={{ background: 'rgba(0,0,0,0.05)' }} onClick={() => setStep(1)}>Back</button>
+                                <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => setStep(3)}>Review Order</button>
+                            </div>
+                        </div>
+                    )}
+
+                    {step === 3 && (
+                        <div>
+                            <h3 style={{ marginBottom: '1.5rem' }}>Confirm Order</h3>
+                            <div style={{ padding: '2rem', background: 'rgba(147, 112, 219, 0.05)', borderRadius: '15px', border: '1px dashed var(--primary)', margin: '1rem 0' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                                    <span>Event:</span>
+                                    <span style={{ fontWeight: '600' }}>{event.eventName}</span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                                    <span>Tickets:</span>
+                                    <span style={{ fontWeight: '600' }}>{booking.numberOfTickets} x {booking.ticketType}</span>
+                                </div>
+                                <hr style={{ border: 'none', borderTop: '1px solid rgba(0,0,0,0.1)', margin: '1rem 0' }} />
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.2rem' }}>
+                                    <span>Total:</span>
+                                    <span style={{ fontWeight: '700', color: 'var(--primary)' }}>${(booking.ticketType === 'VIP' ? event.priceVIP : event.priceGeneral) * booking.numberOfTickets}</span>
+                                </div>
+                            </div>
+                            <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
+                                <button className="btn" style={{ background: 'rgba(0,0,0,0.05)' }} onClick={() => setStep(2)}>Edit Details</button>
+                                <button className="btn btn-primary" style={{ flex: 1 }} onClick={handleBook} disabled={loading}>
+                                    {loading ? 'Processing...' : 'Complete Purchase'}
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {step === 4 && result && (
+                        <div style={{ textAlign: 'center' }}>
+                            <div style={{ width: '80px', height: '80px', background: '#f0fff4', color: '#38a169', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.5rem', margin: '0 auto 1.5rem' }}>✓</div>
+                            <h2 style={{ color: '#2f855a' }}>Booking Confirmed!</h2>
+                            <p style={{ color: 'var(--text-muted)', marginTop: '0.5rem' }}>Your ticket has been generated successfully.</p>
+                            
+                            <div style={{ padding: '2rem', background: 'white', display: 'inline-block', borderRadius: '20px', margin: '2rem 0', boxShadow: '0 10px 25px rgba(0,0,0,0.05)' }}>
+                                <QRCodeSVG value={`EVENTNEXUS-BOOKING-${result.id}`} size={180} />
+                                <p style={{ marginTop: '1rem', fontWeight: '700', letterSpacing: '2px', color: '#4A5568' }}>#{result.id}</p>
+                            </div>
+                            
+                            <p style={{ fontSize: '0.9rem' }}>Please present this QR code at the entrance.</p>
+                            <button className="btn btn-primary" onClick={onBack} style={{ marginTop: '2rem', width: '200px' }}>Back to Home</button>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const Home = ({ events, onSelect }) => (
+            <div className="fade-in">
+                <div style={{ marginBottom: '3rem' }}>
+                    <h1 className="gradient-text" style={{ fontSize: '2.8rem', marginBottom: '0.5rem' }}>Discover Events</h1>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>Find and book the most exciting events near you.</p>
+                </div>
+                
+                <div className="event-grid">
+                    {events.length === 0 ? (
+                        <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '4rem' }}>
+                            <p style={{ color: 'var(--text-muted)' }}>No events found. Please make sure the backend is running.</p>
+                        </div>
+                    ) : (
+                        events.map(ev => (
+                            <div key={ev.id} className="glass" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', transition: 'transform 0.3s' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-5px)'} onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
+                                <div style={{ position: 'relative' }}>
+                                    <img src={ev.imageUrl || 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&q=80&w=800'} 
+                                         style={{ width: '100%', height: '200px', objectFit: 'cover' }} 
+                                         alt={ev.eventName} />
+                                    <div style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'rgba(255,255,255,0.9)', padding: '0.4rem 0.8rem', borderRadius: '8px', fontSize: '0.8rem', fontWeight: '700', color: 'var(--primary)' }}>
+                                        ${ev.priceGeneral}
+                                    </div>
+                                </div>
+                                <div style={{ padding: '1.5rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                                    <h3 style={{ fontSize: '1.25rem', marginBottom: '0.75rem' }}>{ev.eventName}</h3>
+                                    <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '1.5rem', flex: 1, display: '-webkit-box', WebkitLineClamp: '2', WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                        {ev.description}
+                                    </p>
+                                    <button className="btn btn-primary" style={{ width: '100%', padding: '0.7rem' }} onClick={() => onSelect(ev)}>Book Tickets</button>
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+            </div>
+        );
+
+        const Admin = ({ events, bookings }) => {
+            const revenue = useMemo(() => bookings.reduce((s, b) => s + (b.totalAmount || 0), 0), [bookings]);
+            
+            return (
+                <div className="fade-in">
+                    <h1 className="gradient-text" style={{ fontSize: '2.5rem', marginBottom: '2rem' }}>Analytics Dashboard</h1>
+                    
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem', margin: '2rem 0' }}>
+                        <div className="glass" style={{ padding: '2rem' }}>
+                            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: '600' }}>TOTAL REVENUE</p>
+                            <h2 style={{ fontSize: '2.2rem', marginTop: '0.5rem' }}>${revenue.toLocaleString()}</h2>
+                        </div>
+                        <div className="glass" style={{ padding: '2rem' }}>
+                            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: '600' }}>TICKETS SOLD</p>
+                            <h2 style={{ fontSize: '2.2rem', marginTop: '0.5rem' }}>{bookings.length}</h2>
+                        </div>
+                        <div className="glass" style={{ padding: '2rem' }}>
+                            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: '600' }}>ACTIVE EVENTS</p>
+                            <h2 style={{ fontSize: '2.2rem', marginTop: '0.5rem' }}>{events.length}</h2>
+                        </div>
+                    </div>
+
+                    <div className="glass" style={{ padding: '2rem', overflowX: 'auto' }}>
+                        <h3 style={{ marginBottom: '1.5rem' }}>Recent Transactions</h3>
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                            <thead>
+                                <tr style={{ textAlign: 'left', borderBottom: '2px solid rgba(0,0,0,0.05)' }}>
+                                    <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>ORDER ID</th>
+                                    <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>ATTENDEE</th>
+                                    <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>EVENT</th>
+                                    <th style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>AMOUNT</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {bookings.length === 0 ? (
+                                    <tr>
+                                        <td colSpan="4" style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>No bookings recorded yet.</td>
+                                    </tr>
+                                ) : (
+                                    bookings.map(b => (
+                                        <tr key={b.id} style={{ borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
+                                            <td style={{ padding: '1rem', fontWeight: '600' }}>#{b.id}</td>
+                                            <td style={{ padding: '1rem' }}>
+                                                <div style={{ fontWeight: '500' }}>{b.attendeeName}</div>
+                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{b.emailId}</div>
+                                            </td>
+                                            <td style={{ padding: '1rem' }}>{(b.event && b.event.eventName) || 'N/A'}</td>
+                                            <td style={{ padding: '1rem', fontWeight: '700', color: 'var(--primary)' }}>${b.totalAmount}</td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- MAIN APP ---
+
+        function App() {
+            const [user, setUser] = useState(null);
+            const [events, setEvents] = useState([]);
+            const [bookings, setBookings] = useState([]);
+            const [view, setView] = useState('home');
+            const [selectedEvent, setSelectedEvent] = useState(null);
+            const [notif, setNotif] = useState(null);
+
+            useEffect(() => {
+                fetchEvents();
+                
+                // Real-time updates via WebSocket (StompJS 7+)
+                let client = null;
+                try {
+                    const StompJs = window.StompJs;
+                    if (StompJs && window.SockJS) {
+                        const socket = new SockJS(`${API_BASE}/ws`);
+                        client = new StompJs.Client({
+                            webSocketFactory: () => socket,
+                            reconnectDelay: 5000,
+                            onConnect: () => {
+                                console.log("Connected to WebSocket");
+                                client.subscribe('/topic/notifications', (m) => {
+                                    try {
+                                        const data = JSON.parse(m.body);
+                                        setNotif(data.message);
+                                        setTimeout(() => setNotif(null), 6000);
+                                    } catch(e) {}
+                                });
+                                client.subscribe('/topic/events', (m) => {
+                                    try {
+                                        const updated = JSON.parse(m.body);
+                                        setEvents(prev => prev.map(e => e.id === updated.id ? updated : e));
+                                    } catch(e) {}
+                                });
+                            },
+                            onStompError: (frame) => console.error('STOMP error', frame.headers['message'])
+                        });
+                        client.activate();
+                    }
+                } catch (err) {
+                    console.error("WebSocket setup failed:", err);
+                }
+
+                return () => {
+                    if (client) client.deactivate();
+                };
+            }, []);
+
+            useEffect(() => {
+                if (user && user.isAdmin) fetchBookings();
+            }, [user]);
+
+            const fetchEvents = async () => {
+                try {
+                    const res = await axios.get(`${API_BASE}/api/events`);
+                    setEvents(res.data);
+                } catch (err) {
+                    console.error("Failed to fetch events:", err);
+                }
+            };
+
+            const fetchBookings = async () => {
+                try {
+                    const res = await axios.get(`${API_BASE}/api/bookings`);
+                    setBookings(res.data);
+                } catch (err) {
+                    console.error("Failed to fetch bookings:", err);
+                }
+            };
+
+            const handleLogout = () => {
+                setUser(null);
+                delete axios.defaults.headers.common['Authorization'];
+                setView('home');
+            };
+
+            if (!user) {
+                return <Login onLogin={(u, t) => { 
+                    setUser(u); 
+                    axios.defaults.headers.common['Authorization'] = `Bearer ${t}`; 
+                }} />;
+            }
+
+            return (
+                <div style={{ minHeight: '100vh', display: 'flex' }}>
+                    <aside className="glass sidebar">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', marginBottom: '3rem', padding: '0.5rem' }}>
+                            <div style={{ width: '40px', height: '40px', background: 'linear-gradient(135deg, var(--primary), var(--secondary))', borderRadius: '10px' }}></div>
+                            <h2 className="gradient-text" style={{ fontSize: '1.5rem' }}>Nexus</h2>
+                        </div>
+                        
+                        <nav style={{ flex: 1 }}>
+                            <div className={`nav-item ${view === 'home' || view === 'booking' ? 'active' : ''}`} onClick={() => setView('home')}>
+                                <span>🏠</span> Home
+                            </div>
+                            {user.isAdmin && (
+                                <div className={`nav-item ${view === 'admin' ? 'active' : ''}`} onClick={() => setView('admin')}>
+                                    <span>🛡️</span> Admin Panel
+                                </div>
+                            )}
+                        </nav>
+
+                        <div style={{ marginTop: 'auto', padding: '1.2rem', borderRadius: '15px', background: 'rgba(255,255,255,0.4)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', marginBottom: '0.8rem' }}>
+                                <div style={{ width: '35px', height: '35px', background: 'var(--lavender)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem' }}>👤</div>
+                                <div style={{ overflow: 'hidden' }}>
+                                    <p style={{ fontWeight: '600', fontSize: '0.9rem', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{user.name}</p>
+                                    <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{user.isAdmin ? 'Administrator' : 'Explorer'}</p>
+                                </div>
+                            </div>
+                            <button onClick={handleLogout} style={{ width: '100%', padding: '0.6rem', color: '#c53030', border: '1px solid #feb2b2', background: 'white', borderRadius: '8px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: '600' }}>Logout</button>
+                        </div>
+                    </aside>
+
+                    <main className="main-content" style={{ flex: 1 }}>
+                        <div className="container" style={{ padding: 0 }}>
+                            {view === 'home' && <Home events={events} onSelect={(e) => { setSelectedEvent(e); setView('booking'); }} />}
+                            {view === 'booking' && <BookingWizard event={selectedEvent} onBack={() => setView('home')} />}
+                            {view === 'admin' && <Admin events={events} bookings={bookings} />}
+                        </div>
+                    </main>
+
+                    {notif && <LiveNotification message={notif} onClose={() => setNotif(null)} />}
+                </div>
+            );
+        }
+
+        // Render with safety check
+        try {
+            const rootElement = document.getElementById('root');
+            if (rootElement) {
+                const root = ReactDOM.createRoot(rootElement);
+                root.render(<App />);
+            } else {
+                console.error("Root element not found!");
+            }
+        } catch (e) {
+            console.error("Render error:", e);
+            document.getElementById('root').innerHTML = `<div class="error-container"><h3>Render Exception</h3><p>${e.message}</p></div>`;
+        }
+    </script>
+</body>
+</html>
