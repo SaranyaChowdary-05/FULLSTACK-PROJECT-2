@@ -20,8 +20,8 @@ echo [5/6] Connecting to GitHub repository...
 git remote add origin https://github.com/SaranyaChowdary-05/FULLSTACK-PROJECT-2.git
 git remote set-url origin https://github.com/SaranyaChowdary-05/FULLSTACK-PROJECT-2.git
 
-echo [6/6] Pushing files to GitHub...
-git push -u origin main
+echo [6/6] Pushing files to GitHub (force pushing to overwrite remote web uploads)...
+git push -f -u origin main
 
 echo.
 echo ==============================================
