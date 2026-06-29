@@ -17,6 +17,7 @@ import AdminVerification from './pages/AdminVerification';
 import Transactions from './pages/Transactions';
 import LiveFeed from './components/LiveFeed';
 import AIChatbot from './components/AIChatbot';
+import ErrorBoundary from './components/ErrorBoundary';
 
 const ProtectedRoute = ({ children, adminOnly = false }) => {
   const { user, loading } = useAuth();
@@ -95,11 +96,13 @@ function AppContent() {
 
 function App() {
   return (
-    <AuthProvider>
-      <NotificationProvider>
-        <AppContent />
-      </NotificationProvider>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <NotificationProvider>
+          <AppContent />
+        </NotificationProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 

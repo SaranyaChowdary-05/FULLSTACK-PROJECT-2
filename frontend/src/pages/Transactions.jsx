@@ -21,7 +21,7 @@ const Transactions = () => {
     fetchTransactions();
   }, [user.id]);
 
-  const totalSpent = transactions.reduce((sum, t) => sum + (t.event.price || 0), 0);
+  const totalSpent = transactions.reduce((sum, t) => sum + ((t.event && (t.event.price || t.event.priceGeneral)) || t.amount || t.totalAmount || 0), 0);
 
   if (loading) return <div style={{ padding: '2rem' }}>Loading transaction history...</div>;
 
@@ -53,18 +53,33 @@ const Transactions = () => {
           </thead>
           <tbody>
             {transactions.map(t => (
-              <tr key={t.id} style={{ borderBottom: '1px solid rgba(0,0,0,0.05)', transition: 'background 0.3s' }} className="table-row">
-                <td style={{ padding: '1.2rem', fontWeight: 'bold', color: 'var(--primary)' }}>#TRX-{t.id}</td>
+              <tr key={t.id || t._id} style={{ borderBottom: '1px solid rgba(0,0,0,0.05)', transition: 'background 0.3s' }} className="table-row">
+                <td style={{ padding: '1.2rem', fontWeight: 'bold', color: 'var(--primary)' }}>#TRX-{t.id || t._id}</td>
                 <td style={{ padding: '1.2rem' }}>
-                  <div style={{ fontWeight: '600' }}>{t.event.title}</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{t.event.category}</div>
+                  <div style={{ fontWeight: '600' }}>{t.event ? (t.event.title || t.event.eventName) : 'N/A'}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{t.event ? t.event.category : 'N/A'}</div>
                 </td>
                 <td style={{ padding: '1.2rem', fontSize: '0.9rem' }}>
-                  {new Date(t.timestamp || t.date).toLocaleDateString()}
-                  <div style={{ fontSize: '0.75rem', color: '#999' }}>{new Date(t.timestamp || t.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                  {(() => {
+                    const dateVal = t.timestamp || t.date || t.createdAt;
+                    if (!dateVal) return 'N/A';
+                    const d = new Date(dateVal);
+                    if (isNaN(d.getTime())) return 'N/A';
+                    return (
+                      <>
+                        {d.toLocaleDateString()}
+                        <div style={{ fontSize: '0.75rem', color: '#999' }}>{d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                      </>
+                    );
+                  })()}
                 </td>
                 <td style={{ padding: '1.2rem', fontSize: '0.85rem' }}>{t.paymentMethod || 'Nexus Pay'}</td>
-                <td style={{ padding: '1.2rem', fontWeight: 'bold' }}>₹{t.event.price.toFixed(2)}</td>
+                <td style={{ padding: '1.2rem', fontWeight: 'bold' }}>
+                  ₹{(() => {
+                    const priceVal = t.event ? (t.event.price || t.event.priceGeneral) : (t.amount || t.totalAmount || 0);
+                    return typeof priceVal === 'number' ? priceVal.toFixed(2) : '0.00';
+                  })()}
+                </td>
                 <td style={{ padding: '1.2rem' }}>
                   <span style={{ 
                     padding: '0.4rem 0.8rem', 

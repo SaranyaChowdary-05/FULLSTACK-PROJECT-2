@@ -45,19 +45,22 @@ const Dashboard = () => {
       <h1 className="gradient-text">My Registrations</h1>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem', marginTop: '2rem' }}>
         {bookings.map((b) => {
-          const completed = isEventCompleted(b.event.date);
+          const eventDateVal = b.event ? (b.event.date || b.event.eventDate) : null;
+          const completed = eventDateVal ? isEventCompleted(eventDateVal) : false;
           const isCancelled = b.status === 'Cancelled';
           const isRefunded = b.status === 'Refunded';
 
           return (
-            <div key={b.id} className="glass card" style={{ padding: '1.5rem', borderLeft: `6px solid ${isCancelled ? '#e53e3e' : isRefunded ? '#f6ad55' : 'var(--primary)'}` }}>
+            <div key={b.id || b._id} className="glass card" style={{ padding: '1.5rem', borderLeft: `6px solid ${isCancelled ? '#e53e3e' : isRefunded ? '#f6ad55' : 'var(--primary)'}` }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                <span className="category-badge">{b.event.category}</span>
-                <span style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>#{b.id}</span>
+                <span className="category-badge">{b.event ? b.event.category : 'N/A'}</span>
+                <span style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>#{b.id || (b._id ? b._id.toString().substring(0, 5).toUpperCase() : '00000')}</span>
               </div>
               
-              <h3 style={{ margin: '0 0 0.5rem 0' }}>{b.event.title}</h3>
-              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>📅 {b.event.date} | 📍 {b.event.location}</p>
+              <h3 style={{ margin: '0 0 0.5rem 0' }}>{b.event ? (b.event.title || b.event.eventName) : 'N/A'}</h3>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                📅 {eventDateVal ? new Date(eventDateVal).toLocaleDateString() : 'N/A'} | 📍 {b.event ? (b.event.location || b.event.venue) : 'N/A'}
+              </p>
               
               <div style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
                 {completed && !isCancelled && !isRefunded ? (
@@ -65,10 +68,10 @@ const Dashboard = () => {
                 ) : (
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
                     {!isCancelled && !isRefunded && (
-                       <button className="btn" style={{ flex: 1, background: '#fff5f5', color: '#e53e3e', border: '1px solid #fed7d7' }} onClick={() => handleCancel(b.id)}>🗑️ Cancel Ticket</button>
+                       <button className="btn" style={{ flex: 1, background: '#fff5f5', color: '#e53e3e', border: '1px solid #fed7d7' }} onClick={() => handleCancel(b.id || b._id)}>🗑️ Cancel Ticket</button>
                     )}
                     {user?.role === 'admin' && isCancelled && (
-                       <button className="btn btn-primary" style={{ flex: 1, background: '#f6ad55', border: 'none' }} onClick={() => handleRefund(b.id)}>Process Refund ₹</button>
+                       <button className="btn btn-primary" style={{ flex: 1, background: '#f6ad55', border: 'none' }} onClick={() => handleRefund(b.id || b._id)}>Process Refund ₹</button>
                     )}
                   </div>
                 )}
@@ -78,7 +81,7 @@ const Dashboard = () => {
                   background: isCancelled ? '#fff5f5' : isRefunded ? '#fffaf0' : 'var(--lavender)',
                   color: isCancelled ? '#e53e3e' : isRefunded ? '#dd6b20' : 'var(--primary)'
                 }}>
-                  {b.status || 'Confirmed'} • ₹{b.event?.price}
+                  {b.status || 'Confirmed'} • ₹{b.event ? (b.event.price || b.event.priceGeneral) : 0}
                 </div>
               </div>
             </div>

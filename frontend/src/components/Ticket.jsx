@@ -26,7 +26,12 @@ const Ticket = ({ booking, event }) => {
           <div className="info-row">
             <div className="info-item">
               <label>DATE</label>
-              <span>{new Date(event.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+              <span>{(() => {
+                const dateVal = event.date || event.eventDate;
+                if (!dateVal) return 'N/A';
+                const d = new Date(dateVal);
+                return isNaN(d.getTime()) ? 'N/A' : d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+              })()}</span>
             </div>
             <div className="info-item">
               <label>TIME</label>
@@ -48,7 +53,7 @@ const Ticket = ({ booking, event }) => {
           <div className="info-row">
             <div className="info-item full">
               <label>HOLDER</label>
-              <span>{booking.attendeeName || 'Nexus Student'}</span>
+              <span>{booking.attendeeName || booking.userName || 'Nexus Student'}</span>
             </div>
           </div>
         </div>
@@ -58,9 +63,9 @@ const Ticket = ({ booking, event }) => {
           <div className="qr-wrapper">
             <QRCodeSVG 
               value={JSON.stringify({
-                id: booking.id,
-                event: event.title,
-                user: booking.attendeeName
+                id: booking.id || booking._id || '',
+                event: event.title || event.eventName || '',
+                user: booking.attendeeName || booking.userName || 'Nexus Student'
               })} 
               size={100}
               level={"H"}
@@ -69,7 +74,7 @@ const Ticket = ({ booking, event }) => {
           </div>
           <div className="booking-id">
             <label>BOOKING ID</label>
-            <span>#NX-{booking.id.toString().padStart(5, '0')}</span>
+            <span>#NX-{booking.id ? booking.id.toString().padStart(5, '0') : (booking._id ? booking._id.toString().substring(0, 5).toUpperCase() : '00000')}</span>
           </div>
         </div>
 

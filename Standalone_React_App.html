@@ -363,6 +363,9 @@
             const [result, setResult] = useState(null);
             const [loading, setLoading] = useState(false);
 
+            const bookingObj = result ? (result.booking || result) : null;
+            const displayId = bookingObj ? (bookingObj.id || bookingObj._id || '00000') : '';
+
             const handleBook = async () => {
                 setLoading(true);
                 try {
@@ -479,8 +482,8 @@
                             <p style={{ color: 'var(--text-muted)', marginTop: '0.5rem' }}>Your ticket has been generated successfully.</p>
                             
                             <div style={{ padding: '2rem', background: 'white', display: 'inline-block', borderRadius: '20px', margin: '2rem 0', boxShadow: '0 10px 25px rgba(0,0,0,0.05)' }}>
-                                <QRCodeSVG value={`EVENTNEXUS-BOOKING-${result.id}`} size={180} />
-                                <p style={{ marginTop: '1rem', fontWeight: '700', letterSpacing: '2px', color: '#4A5568' }}>#{result.id}</p>
+                                <QRCodeSVG value={`EVENTNEXUS-BOOKING-${displayId}`} size={180} />
+                                <p style={{ marginTop: '1rem', fontWeight: '700', letterSpacing: '2px', color: '#4A5568' }}>#{displayId}</p>
                             </div>
                             
                             <p style={{ fontSize: '0.9rem' }}>Please present this QR code at the entrance.</p>

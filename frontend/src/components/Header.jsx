@@ -37,7 +37,7 @@ const Header = () => {
         <h2 className="gradient-text" style={{ margin: 0, fontSize: '1.5rem' }}>Nexus</h2>
         <div style={{ marginLeft: '0.5rem', borderLeft: '1px solid #eee', paddingLeft: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <div>
-            <h4 style={{ margin: 0, fontSize: '1rem', color: 'var(--text-main)' }}>{getGreeting()}, {user?.name.split(' ')[0]}!</h4>
+            <h4 style={{ margin: 0, fontSize: '1rem', color: 'var(--text-main)' }}>{getGreeting()}, {user?.name ? user.name.split(' ')[0] : 'User'}!</h4>
             <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '600' }}>
               {user?.role === 'admin' ? '🛡️ Administrator' : '🎓 Student'}
             </p>

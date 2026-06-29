@@ -38,7 +38,11 @@ const Certificate = ({ userName, eventName, date, bookingId }) => {
           <strong style={{ fontSize: '1.4rem' }}>{eventName}</strong>
         </p>
 
-        <p>held on <strong>{new Date(date).toLocaleDateString()}</strong></p>
+        <p>held on <strong>{(() => {
+          if (!date) return 'N/A';
+          const d = new Date(date);
+          return isNaN(d.getTime()) ? 'N/A' : d.toLocaleDateString();
+        })()}</strong></p>
 
         <div style={{ display: 'flex', justifyContent: 'space-around', marginTop: '50px', alignItems: 'center' }}>
           <div style={{ textAlign: 'center' }}>

@@ -20,8 +20,12 @@ const LiveFeed = () => {
         onConnect: () => {
           console.log('Connected to WebSocket');
           client.subscribe('/topic/notifications', (message) => {
-            const notification = JSON.parse(message.body);
-            addNotification(notification);
+            try {
+              const notification = typeof message.body === 'string' && message.body.startsWith('{') ? JSON.parse(message.body) : { message: message.body };
+              addNotification(notification);
+            } catch (e) {
+              addNotification({ message: message.body });
+            }
           });
         },
         onStompError: (frame) => {

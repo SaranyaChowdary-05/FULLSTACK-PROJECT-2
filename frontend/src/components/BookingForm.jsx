@@ -14,8 +14,12 @@ const BookingForm = ({ event, onComplete, onCancel }) => {
   const [appliedCode, setAppliedCode] = useState('');
   const [bookingData, setBookingData] = useState(null);
 
-  const maxTickets = Math.min(10, event.capacity - event.registrations);
-  const subtotal = event.price * tickets;
+  const price = event.price !== undefined ? event.price : (event.priceGeneral !== undefined ? event.priceGeneral : 0);
+  const capacity = event.capacity !== undefined ? event.capacity : (event.totalTickets || 100);
+  const registrations = event.registrations !== undefined ? (Array.isArray(event.registrations) ? event.registrations.length : event.registrations) : 0;
+  
+  const maxTickets = Math.min(10, capacity - registrations);
+  const subtotal = price * tickets;
   const finalPrice = Math.max(0, subtotal - discount);
 
   const increaseTickets = () => { if (tickets < maxTickets) setTickets(t => t + 1); };
@@ -44,14 +48,17 @@ const BookingForm = ({ event, onComplete, onCancel }) => {
         paidAmount: finalPrice,
         promoUsed: appliedCode
       });
-      setBookingData(response.data);
+      
+      const bData = response.data.booking || response.data;
+      setBookingData(bData);
       
       // Update global user state with new XP, Level, and Badges
-      if (response.data.newXP !== undefined) {
+      const xpData = response.data.newXP !== undefined ? response.data : (response.data.booking || {});
+      if (xpData.newXP !== undefined) {
         updateUserInfo({ 
-          xp: response.data.newXP, 
-          level: response.data.newLevel,
-          badges: response.data.newBadges
+          xp: xpData.newXP, 
+          level: xpData.newLevel,
+          badges: xpData.newBadges
         });
       }
 
@@ -123,7 +130,7 @@ const BookingForm = ({ event, onComplete, onCancel }) => {
       {/* Price Breakdown */}
       <div style={{ borderTop: '1px solid #eee', paddingTop: '1rem', marginBottom: '1.5rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
-          <span>₹{event.price} × {tickets} ticket{tickets > 1 ? 's' : ''}</span>
+          <span>₹{price} × {tickets} ticket{tickets > 1 ? 's' : ''}</span>
           <span>₹{subtotal.toFixed(2)}</span>
         </div>
         {discount > 0 && (
